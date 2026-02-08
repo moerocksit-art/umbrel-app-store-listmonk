@@ -1,14 +1,39 @@
-version: "3.7"
+version: "3.8"
 
 services:
-
-  app_proxy:
+  db:
+    image: postgres:15
+    restart: unless-stopped
     environment:
-      # The format here is: <app-id>_<docker-service-name>_1
-      APP_HOST: sparkles-hello-world_server_1
-      APP_PORT: 3000
-    
-  server:
-    image: getumbrel/community-app-store-hello-world:latest
-    user: "1000:1000"
-    init: true
+      - POSTGRES_DB=listmonk
+      - POSTGRES_USER=listmonk
+      - POSTGRES_PASSWORD=listmonk
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - listmonk
+
+  app:
+    image: listmonk/listmonk:latest
+    restart: unless-stopped
+    environment:
+      - LISTMONK_app__admin_username=admin
+      - LISTMONK_app__admin_password=changeme
+      - LISTMONK_db__host=db
+      - LISTMONK_db__user=listmonk
+      - LISTMONK_db__password=listmonk
+      - LISTMONK_db__database=listmonk
+      - LISTMONK_db__port=5432
+    ports:
+      - "19000:9000"
+    depends_on:
+      - db
+    networks:
+      - listmonk
+
+networks:
+  listmonk:
+    driver: bridge
+
+volumes:
+  db_data:
